@@ -4,4 +4,4 @@ asyncio
 aiosqlite
 requests
 nest_asyncio
-dotenv
+python-dotenv
