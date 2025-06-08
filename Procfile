@@ -1,0 +1,2 @@
+worker: python nds.py
+
