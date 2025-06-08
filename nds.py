@@ -162,18 +162,30 @@ async def start_bot():
 import asyncio
 import sys
 
-if __name__ == "__main__":
+async def safe_main():
     try:
-        if sys.platform.startswith("linux") and "termux" in sys.executable.lower():
-            # ✅ Termux or similar environment
+        await start_bot()
+    except RuntimeError as e:
+        if "already running" in str(e):
             import nest_asyncio
             nest_asyncio.apply()
-            asyncio.get_event_loop().run_until_complete(start_bot())
+            await start_bot()
         else:
-            # ✅ Normal environment, including Render
+            raise
+
+if __name__ == "__main__":
+    if sys.platform.startswith("linux") and "termux" in sys.executable.lower():
+        # ✅ Termux-specific: Apply nest_asyncio and run
+        import nest_asyncio
+        nest_asyncio.apply()
+        asyncio.get_event_loop().run_until_complete(start_bot())
+    else:
+        # ✅ Normal/Render-safe: Try asyncio.run, fallback to patched loop
+        try:
+            asyncio.run(safe_main())
+        except RuntimeError as e:
+            # Handles cases like Render or Jupyter where event loop is already running
+            import nest_asyncio
+            nest_asyncio.apply()
             loop = asyncio.get_event_loop()
             loop.run_until_complete(start_bot())
-    except RuntimeError as e:
-        # 🔁 Fallback for already running event loops (e.g., Render issue)
-        loop = asyncio.get_running_loop()
-        loop.create_task(start_bot())
