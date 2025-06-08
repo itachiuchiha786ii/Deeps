@@ -159,13 +159,21 @@ async def start_bot():
     await init_db()
     await app.run_polling()
 
-if __name__ == "__main__":
-    import sys
+import asyncio
+import sys
 
-    if sys.platform.startswith("linux") and "termux" in sys.executable.lower():
-        # Termux or similar: Use existing event loop
-        import nest_asyncio
-        nest_asyncio.apply()
-        asyncio.get_event_loop().run_until_complete(start_bot())
-    else:
-        asyncio.run(start_bot())
+if __name__ == "__main__":
+    try:
+        if sys.platform.startswith("linux") and "termux" in sys.executable.lower():
+            # ✅ Termux or similar environment
+            import nest_asyncio
+            nest_asyncio.apply()
+            asyncio.get_event_loop().run_until_complete(start_bot())
+        else:
+            # ✅ Normal environment, including Render
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(start_bot())
+    except RuntimeError as e:
+        # 🔁 Fallback for already running event loops (e.g., Render issue)
+        loop = asyncio.get_running_loop()
+        loop.create_task(start_bot())
